@@ -1,0 +1,11 @@
+if(NOT DEFINED INSTALL_PREFIX)
+  message(FATAL_ERROR "INSTALL_PREFIX is required")
+endif()
+
+set(EXECUTABLE "${INSTALL_PREFIX}/bin/cpp-release-lab")
+if(WIN32)
+  string(APPEND EXECUTABLE ".exe")
+endif()
+set(EXPECTED_EXIT 0)
+set(EXPECTED_STDOUT "Hello, World!\n")
+include("${CMAKE_CURRENT_LIST_DIR}/CheckCli.cmake")
