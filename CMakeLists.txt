@@ -35,6 +35,10 @@ set_target_properties(
 )
 
 if(MSVC)
+  set_property(
+    TARGET cpp-release-lab
+    PROPERTY MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>"
+  )
   target_compile_options(cpp-release-lab PRIVATE /W4 /WX /permissive-)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
   target_compile_options(
