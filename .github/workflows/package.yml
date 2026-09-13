@@ -13,10 +13,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - ubuntu-24.04
-          - macos-14
-          - windows-2022
+        include:
+          - os: ubuntu-24.04
+            preset: release
+            build_directory: build/release
+            configuration: ""
+          - os: macos-14
+            preset: release
+            build_directory: build/release
+            configuration: ""
+          - os: windows-2022
+            preset: release-windows
+            build_directory: build/release-windows
+            configuration: Release
     env:
       VCPKG_ROOT: ${{ github.workspace }}/.vcpkg
       VCPKG_COMMIT: 16c71a39e5a0fc0bdb3fad03beef8f38ee00ee3b
@@ -42,36 +51,46 @@ jobs:
 
       - name: Configure
         if: runner.os != 'Windows'
-        run: cmake --preset release
+        run: cmake --preset ${{ matrix.preset }}
 
       - name: Configure on Windows
         if: runner.os == 'Windows'
-        run: cmake --preset release -DVCPKG_TARGET_TRIPLET=x64-windows-static
+        run: cmake --preset ${{ matrix.preset }} -DVCPKG_TARGET_TRIPLET=x64-windows-static
 
       - name: Build
-        run: cmake --build --preset release
+        run: cmake --build --preset ${{ matrix.preset }}
 
       - name: Test
-        run: ctest --preset release
+        run: ctest --preset ${{ matrix.preset }}
 
       - name: Install
-        run: cmake --install build/release --prefix stage
+        if: matrix.configuration == ''
+        run: cmake --install ${{ matrix.build_directory }} --prefix stage
+
+      - name: Install on Windows
+        if: matrix.configuration != ''
+        run: cmake --install ${{ matrix.build_directory }} --config ${{ matrix.configuration }} --prefix stage
 
       - name: Smoke test installed application
         run: cmake -DINSTALL_PREFIX=stage -P cmake/SmokeInstall.cmake
 
       - name: Package
-        run: cpack --config build/release/CPackConfig.cmake
+        if: matrix.configuration == ''
+        run: cpack --config ${{ matrix.build_directory }}/CPackConfig.cmake
+
+      - name: Package on Windows
+        if: matrix.configuration != ''
+        run: cpack --config ${{ matrix.build_directory }}/CPackConfig.cmake -C ${{ matrix.configuration }}
 
       - name: Smoke test package
-        run: cmake -DPACKAGE_DIRECTORY=build/release/package -P cmake/SmokePackage.cmake
+        run: cmake -DPACKAGE_DIRECTORY=${{ matrix.build_directory }}/package -P cmake/SmokePackage.cmake
 
       - name: Upload package
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f
         with:
           name: cpp-release-lab-${{ matrix.os }}
           path: |
-            build/release/package/*.zip
-            build/release/package/*.tar.gz
+            ${{ matrix.build_directory }}/package/*.zip
+            ${{ matrix.build_directory }}/package/*.tar.gz
           if-no-files-found: error
           overwrite: true

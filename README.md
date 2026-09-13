@@ -17,6 +17,7 @@ clang-format profile follows the public QVAC C++ lint package.
 - CMake 3.25 or newer
 - Ninja
 - A C++20 compiler
+- Visual Studio 2022 with the Desktop development with C++ workload on Windows
 - Git
 - vcpkg at commit `16c71a39e5a0fc0bdb3fad03beef8f38ee00ee3b`
 
@@ -52,7 +53,7 @@ Use `build/dev/cpp-release-lab.exe` on Windows.
 
 ## Reproduce a release package
 
-The release workflow uses the same `release` preset and commands:
+On Linux and macOS, the release workflow uses the `release` preset and commands:
 
 ```sh
 cmake --preset release
@@ -63,17 +64,20 @@ cpack --config build/release/CPackConfig.cmake
 ./stage/bin/cpp-release-lab
 ```
 
-On Windows, configure with the static vcpkg triplet before running the remaining
-commands:
+On Windows, use the Visual Studio release preset with the static vcpkg triplet:
 
 ```powershell
-cmake --preset release -DVCPKG_TARGET_TRIPLET=x64-windows-static
+cmake --preset release-windows -DVCPKG_TARGET_TRIPLET=x64-windows-static
+cmake --build --preset release-windows
+ctest --preset release-windows
+cmake --install build/release-windows --config Release --prefix stage
+cpack --config build/release-windows/CPackConfig.cmake -C Release
+./stage/bin/cpp-release-lab.exe
 ```
 
-Use `stage/bin/cpp-release-lab.exe` for the final smoke run on Windows. CPack
-writes a ZIP on Windows and a TGZ elsewhere under `build/release/package`. The
-archive filename includes the application version, target platform, and target
-architecture.
+CPack writes a ZIP under `build/release-windows/package` on Windows and a TGZ
+under `build/release/package` elsewhere. The archive filename includes the
+application version, target platform, and target architecture.
 
 ## Supported platforms
 
